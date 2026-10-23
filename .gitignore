@@ -1,0 +1,40 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Datasets
+dataset/*
+!dataset/.gitkeep
+
+# Trained model files
+models/*
+!models/.gitkeep
+*.keras
+*.h5
+*.weights.h5
+*.ckpt
+
+# Generated reports
+reports/*
+!reports/.gitkeep
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test and coverage outputs
+.pytest_cache/
+.coverage
+htmlcov/

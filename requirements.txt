@@ -1,0 +1,14 @@
+
+tensorflow==2.15.1
+numpy<2.0
+pandas
+scikit-learn
+matplotlib
+seaborn
+Pillow
+opencv-python
+fastapi
+uvicorn[standard]
+python-multipart
+pytest
+httpx
