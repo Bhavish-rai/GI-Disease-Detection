@@ -3,7 +3,7 @@ import tensorflow as tf
 
 
 IMAGE_SIZE = (224, 224)
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 AUTOTUNE = tf.data.AUTOTUNE
 
 
