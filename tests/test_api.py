@@ -76,3 +76,40 @@ def test_reject_unsupported_file(client):
 def test_predict_requires_file(client):
     response = client.post("/api/predict")
     assert response.status_code == 422
+
+
+
+def test_reject_corrupted_image(client):
+    response = client.post(
+        "/api/upload",
+        files={"file": ("broken.jpg", b"this is not a real image", "image/jpeg")},
+    )
+    assert response.status_code == 400
+
+
+def test_reject_mismatched_image_extension(client):
+    buffer = __import__("io").BytesIO()
+    Image.new("RGB", (32, 32), color=(100, 120, 140)).save(
+        buffer, format="PNG"
+    )
+
+    response = client.post(
+        "/api/upload",
+        files={"file": ("image.jpg", buffer.getvalue(), "image/jpeg")},
+    )
+    assert response.status_code == 400
+
+
+def test_reject_oversized_image(client):
+    oversized_content = b"x" * (10 * 1024 * 1024 + 1)
+
+    response = client.post(
+        "/api/upload",
+        files={"file": ("large.jpg", oversized_content, "image/jpeg")},
+    )
+    assert response.status_code == 413
+
+
+def test_gradcam_requires_file(client):
+    response = client.post("/api/gradcam")
+    assert response.status_code == 422
