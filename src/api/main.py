@@ -5,6 +5,7 @@ import logging
 import uuid
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -12,10 +13,18 @@ from src.api.schemas import (
     HealthResponse,
     PredictionResponse,
     GradCAMResponse,
+    ExplanationRequest,
+    ExplanationResponse,
+    ChatRequest,
+    ChatResponse,
 )
 from src.api.utils import save_uploaded_image, delete_temp_file
 from src.inference.predict import load_trained_model, predict_image
 from src.inference.gradcam import generate_gradcam
+from src.ai.gemini_explainer import (
+    generate_explanation,
+    answer_question,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -42,10 +51,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="GI Disease Detection API",
     description=(
-        "Backend API for AI-assisted gastrointestinal disease "
-        "classification from endoscopic images."
+        "API for gastrointestinal endoscopy image classification, "
+        "Grad-CAM visualization, and Gemini-powered educational "
+        "explanations and follow-up questions."
     ),
-    version="1.0.0",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
@@ -59,13 +69,22 @@ app.add_middleware(
 )
 
 
+# --------------------------------------------------
+# HEALTH CHECK
+# --------------------------------------------------
+
 @app.get("/api/health", response_model=HealthResponse)
 def health_check():
+    """Check whether the API is running."""
     return HealthResponse(
         status="healthy",
         service="GI Disease Detection API",
     )
 
+
+# --------------------------------------------------
+# IMAGE UPLOAD
+# --------------------------------------------------
 
 @app.post("/api/upload")
 async def upload_image(file: UploadFile = File(...)):
@@ -82,9 +101,13 @@ async def upload_image(file: UploadFile = File(...)):
         delete_temp_file(file_path)
 
 
+# --------------------------------------------------
+# IMAGE PREDICTION
+# --------------------------------------------------
+
 @app.post("/api/predict", response_model=PredictionResponse)
 async def predict(file: UploadFile = File(...)):
-    """Classify an uploaded gastrointestinal image."""
+    """Classify an uploaded gastrointestinal endoscopy image."""
     file_path = await save_uploaded_image(file)
 
     try:
@@ -117,6 +140,10 @@ async def predict(file: UploadFile = File(...)):
     finally:
         delete_temp_file(file_path)
 
+
+# --------------------------------------------------
+# GRAD-CAM VISUALIZATION
+# --------------------------------------------------
 
 @app.post("/api/gradcam", response_model=GradCAMResponse)
 async def gradcam(file: UploadFile = File(...)):
@@ -182,3 +209,89 @@ def get_gradcam_image(filename: str):
         media_type="image/png",
         filename=filename,
     )
+
+
+# --------------------------------------------------
+# GEMINI AI EXPLANATION
+# --------------------------------------------------
+
+@app.post(
+    "/api/explanation",
+    response_model=ExplanationResponse,
+)
+def explain_prediction(request: ExplanationRequest):
+    """Generate educational information about a predicted class."""
+    try:
+        explanation = generate_explanation(
+            predicted_class=request.predicted_class,
+            confidence=request.confidence,
+        )
+
+        return ExplanationResponse(
+            predicted_class=request.predicted_class.strip().lower(),
+            explanation=explanation,
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except RuntimeError as exc:
+        # For example, a missing Gemini API key or empty response.
+        logger.warning("Gemini explanation unavailable: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        logger.exception("Failed to generate AI explanation.")
+        raise HTTPException(
+            status_code=502,
+            detail="The AI explanation service is temporarily unavailable.",
+        ) from exc
+
+
+# --------------------------------------------------
+# GEMINI AI FOLLOW-UP CHAT
+# --------------------------------------------------
+
+@app.post(
+    "/api/explanation/chat",
+    response_model=ChatResponse,
+)
+def chat_about_prediction(request: ChatRequest):
+    """Answer a follow-up question about the predicted class."""
+    try:
+        answer = answer_question(
+            predicted_class=request.predicted_class,
+            question=request.question,
+            history=[
+                message.model_dump()
+                for message in request.history
+            ],
+        )
+
+        return ChatResponse(answer=answer)
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except RuntimeError as exc:
+        logger.warning("Gemini chat unavailable: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        logger.exception("Failed to answer AI follow-up question.")
+        raise HTTPException(
+            status_code=502,
+            detail="The AI chat service is temporarily unavailable.",
+        ) from exc
