@@ -1,0 +1,23 @@
+{
+    "model_name": "EfficientNetB0",
+    "test_image_count": 1200,
+    "class_count": 8,
+    "test_loss": 0.318482905626297,
+    "test_accuracy": 0.8758333333333334,
+    "test_accuracy_percent": 87.58,
+    "macro_precision": 0.8767502432602273,
+    "macro_recall": 0.8758333333333334,
+    "macro_f1_score": 0.8751047929326863,
+    "weighted_f1_score": 0.8751047929326863,
+    "class_mapping": {
+        "dyed-lifted-polyps": 0,
+        "dyed-resection-margins": 1,
+        "esophagitis": 2,
+        "normal-cecum": 3,
+        "normal-pylorus": 4,
+        "normal-z-line": 5,
+        "polyps": 6,
+        "ulcerative-colitis": 7
+    },
+    "test_manifest": "reports\\splits\\test.csv"
+}

@@ -1,2 +1,10 @@
-
-{}
+{
+    "dyed-lifted-polyps": 0,
+    "dyed-resection-margins": 1,
+    "esophagitis": 2,
+    "normal-cecum": 3,
+    "normal-pylorus": 4,
+    "normal-z-line": 5,
+    "polyps": 6,
+    "ulcerative-colitis": 7
+}

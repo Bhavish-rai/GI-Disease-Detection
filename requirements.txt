@@ -12,3 +12,5 @@ uvicorn[standard]
 python-multipart
 pytest
 httpx
+google-genai
+python-dotenv
